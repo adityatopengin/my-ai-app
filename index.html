@@ -2,16 +2,29 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Modular AI Predictor</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indian Stock Market AI Predictor</title>
+    
     <link rel="stylesheet" href="style.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>LSTM Stock Predictor</h1>
-        <p>Status: <span id="status">Ready</span></p>
-        <button id="predict-btn">Predict Apple (AAPL) Price</button>
-        <div id="output" class="result">Waiting to start...</div>
+        <h1>NSE/BSE AI Predictor</h1>
+        <p class="subtitle">Powered by an LSTM Neural Network</p>
+
+        <div class="input-group">
+            <label for="ticker">Enter Indian Stock Ticker:</label>
+            <input type="text" id="ticker" value="RELIANCE.NSE" placeholder="e.g., TCS.BOM, ^NSEI">
+        </div>
+
+        <button id="predict-btn">Run AI Prediction</button>
+        
+        <div class="status-panel">
+            <p>Status: <span id="status">Ready</span></p>
+            <div id="output" class="result">Waiting to start analysis...</div>
+        </div>
     </div>
 
     <script type="module" src="js/main.js"></script>
