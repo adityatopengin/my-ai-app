@@ -1,145 +1,151 @@
 /* =========================================
-   CSS VARIABLES FOR SCALABILITY
+   PRO THEME VARIABLES
    ========================================= */
-:root {
-    --bg-color: #f4f6f9;
-    --card-bg: #ffffff;
-    --text-main: #2c3e50;
-    --text-muted: #7f8c8d;
-    --primary-color: #2980b9;
-    --primary-hover: #1f618d;
-    --border-color: #e0e6ed;
-    --success-color: #27ae60;
-    --danger-color: #c0392b;
-    --radius: 8px;
+   :root {
+    --bg-dark: #0f172a;
+    --panel-bg: #1e293b;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --accent-blue: #3b82f6;
+    --accent-blue-hover: #2563eb;
+    --accent-green: #10b981;
+    --accent-red: #ef4444;
+    --border-color: #334155;
+    --radius: 12px;
 }
 
-/* =========================================
-   GLOBAL RESET & TYPOGRAPHY
-   ========================================= */
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--bg-color);
+    background-color: var(--bg-dark);
     color: var(--text-main);
-    display: flex;
-    justify-content: center;
-    align-items: center;
     min-height: 100vh;
-    padding: 20px;
 }
 
 /* =========================================
-   LAYOUT & CONTAINER
+   LAYOUT & GRID
    ========================================= */
-.container {
-    background-color: var(--card-bg);
-    padding: 40px;
+.dashboard-wrapper {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    height: 100vh;
+}
+
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--panel-bg);
+    padding: 15px 25px;
     border-radius: var(--radius);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-    width: 100%;
-    max-width: 500px;
     border: 1px solid var(--border-color);
 }
 
-h1 {
-    font-size: 1.8rem;
-    margin-bottom: 5px;
-    text-align: center;
+.logo { font-size: 1.4rem; font-weight: bold; }
+.logo span { color: var(--accent-blue); }
+
+.controls { display: flex; gap: 15px; width: 60%; justify-content: flex-end; }
+.search-box { display: flex; gap: 10px; flex-grow: 1; max-width: 400px; }
+
+.bento-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    flex-grow: 1;
+    overflow: hidden;
 }
 
-.subtitle {
-    color: var(--text-muted);
-    text-align: center;
-    margin-bottom: 30px;
-    font-size: 0.95rem;
+.panel {
+    background-color: var(--panel-bg);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
 }
+
+h2 { font-size: 1.1rem; color: var(--text-muted); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;}
 
 /* =========================================
    INPUTS & BUTTONS
    ========================================= */
-.input-group {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 25px;
-}
-
-label {
-    font-weight: 600;
-    margin-bottom: 8px;
-    font-size: 0.9rem;
-}
-
-input[type="text"] {
-    padding: 12px 15px;
+input {
+    background-color: var(--bg-dark);
     border: 1px solid var(--border-color);
-    border-radius: var(--radius);
-    font-size: 1rem;
+    color: var(--text-main);
+    padding: 10px 15px;
+    border-radius: 6px;
     outline: none;
-    transition: border-color 0.2s ease;
+    font-size: 1rem;
+    width: 100%;
 }
+input:focus { border-color: var(--accent-blue); }
 
-input[type="text"]:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(41, 128, 185, 0.1);
-}
+.header-input { max-width: 250px; }
 
 button {
-    width: 100%;
-    padding: 14px;
-    background-color: var(--primary-color);
-    color: white;
+    padding: 10px 20px;
     border: none;
-    border-radius: var(--radius);
-    font-size: 1.05rem;
-    font-weight: 600;
+    border-radius: 6px;
+    font-weight: bold;
     cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease;
+    transition: all 0.2s;
 }
 
-button:hover {
-    background-color: var(--primary-hover);
-}
+.btn-primary { background-color: var(--accent-blue); color: white; }
+.btn-primary:hover { background-color: var(--accent-blue-hover); }
 
-button:active {
-    transform: scale(0.98);
-}
+.action-buttons { display: flex; gap: 10px; margin-top: 15px; }
+.btn-action { flex: 1; padding: 12px; }
+.btn-buy { background-color: rgba(16, 185, 129, 0.2); color: var(--accent-green); border: 1px solid var(--accent-green); }
+.btn-sell { background-color: rgba(239, 68, 68, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red); }
+.btn-outline { background-color: transparent; color: var(--text-main); border: 1px solid var(--border-color); }
 
-/* The disabled state prevents the user from crashing the AI */
-button:disabled {
-    background-color: var(--text-muted);
-    cursor: not-allowed;
-    transform: none;
-    opacity: 0.7;
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* =========================================
+   CHART AREA
+   ========================================= */
+.chart-panel { position: relative; }
+.panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;}
+.badge { padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
+.badge-neutral { background-color: var(--border-color); color: var(--text-muted); }
+
+.canvas-container {
+    flex-grow: 1;
+    position: relative;
+    width: 100%;
+    min-height: 400px;
 }
 
 /* =========================================
-   OUTPUT & STATUS
+   RIGHT SIDEBAR ELEMENTS
    ========================================= */
-.status-panel {
-    margin-top: 25px;
-    border-top: 1px solid var(--border-color);
-    padding-top: 20px;
-}
+.sidebar-panel { display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
 
-#status {
-    font-weight: bold;
-    color: var(--primary-color);
-}
+/* AI Brain */
+.progress-bar-container { width: 100%; height: 8px; background-color: var(--bg-dark); border-radius: 4px; margin-bottom: 10px; overflow: hidden; }
+.progress-fill { height: 100%; background-color: var(--accent-blue); transition: width 0.3s ease; }
+.status-text { font-size: 0.9rem; color: var(--accent-blue); margin-bottom: 15px; min-height: 20px;}
 
-.result {
-    margin-top: 15px;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border: 1px dashed var(--border-color);
-    border-radius: var(--radius);
-    min-height: 80px;
-    font-size: 1.1rem;
-    line-height: 1.5;
-}
+.prediction-box { background-color: var(--bg-dark); border: 1px solid var(--border-color); padding: 15px; border-radius: 8px; text-align: center; }
+.prediction-box span { color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; }
+.prediction-box h3 { color: var(--accent-green); font-size: 2rem; margin-top: 5px; }
 
+/* Indicators */
+.indicator-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.indicator-card { background-color: var(--bg-dark); padding: 12px; border-radius: 6px; display: flex; flex-direction: column; border: 1px solid var(--border-color);}
+.ind-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; }
+.ind-value { font-size: 1.2rem; font-weight: bold; color: var(--text-main); }
+
+/* Live Console */
+.console-box { background-color: var(--bg-dark); border: 1px solid #000; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 0.85rem; flex-grow: 1; overflow-y: auto; min-height: 150px; }
+.console-line { margin-bottom: 5px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; word-wrap: break-word;}
+.text-success { color: var(--accent-green); }
+.text-danger { color: var(--accent-red); }
+.text-muted { color: var(--text-muted); }
