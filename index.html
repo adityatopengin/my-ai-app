@@ -26,6 +26,10 @@
             <div id="output" class="result">Waiting to start analysis...</div>
         </div>
     </div>
+    <script>
+    window.onerror = (msg, url, line) => document.getElementById('output').innerHTML = `<p style="color:red;"><b>Error:</b> ${msg} (Line: ${line})</p>`;
+</script>
+
 
     <script type="module" src="js/main.js"></script>
 </body>
