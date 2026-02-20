@@ -3,7 +3,7 @@
 // ==========================================
 // Replace 'YOUR_API_KEY_HERE' with your free key from alphavantage.co
 // Note: Alpha Vantage requires a registered key for Indian stock tickers (NSE/BSE).
-const API_KEY = 'YOUR_API_KEY_HERE'; 
+const API_KEY = '98NRX1JF5O1TPGKR'; 
 
 /**
  * 1. FETCH DATA
