@@ -1,78 +1,186 @@
-// 1. IMPORT THE MODULES
-// We import the specific tools we need from our other files.
-import { fetchStockData, processData } from './api.js';
+// ==========================================
+// 1. IMPORTS & CONFIGURATION
+// ==========================================
+import { fetchMarketData, fetchNewsSentiment, processMultiFeatureData } from './api.js';
 import { createModel, trainModel, predictTomorrow } from './model.js';
 
-// Configuration
-const TIME_STEPS = 10; // The AI will look at 10-day patterns
+const TIME_STEPS = 10;      // Days of memory per training window
+const FEATURE_COUNT = 5;    // Price, Volume, SMA, RSI, Sentiment
+let priceChart = null;      // Holds the Chart.js instance
 
-// 2. CONNECT TO THE HTML INTERFACE
-const predictBtn = document.getElementById('predict-btn');
+// ==========================================
+// 2. DOM ELEMENTS
+// ==========================================
+const apiKeyInput = document.getElementById('api-key');
 const tickerInput = document.getElementById('ticker');
-const statusDisplay = document.getElementById('status');
-const outputDisplay = document.getElementById('output');
+const predictBtn = document.getElementById('predict-btn');
 
-// 3. THE MAIN EXECUTION LOOP
+// Status & Progress
+const progressBar = document.getElementById('ai-progress');
+const statusText = document.getElementById('status');
+const finalPredictionEl = document.getElementById('final-prediction');
+const chartStatus = document.getElementById('chart-status');
+
+// Indicator Cards
+const valRSI = document.getElementById('val-rsi');
+const valSMA = document.getElementById('val-sma');
+const valNews = document.getElementById('val-news');
+const valVol = document.getElementById('val-vol');
+
+// ==========================================
+// 3. MAIN EXECUTION LOOP
+// ==========================================
 predictBtn.addEventListener('click', async () => {
+    const apiKey = apiKeyInput.value.trim();
     const ticker = tickerInput.value.trim();
-    
-    // Basic validation
-    if (!ticker) {
-        alert("Please enter a valid Indian stock ticker (e.g., RELIANCE.NSE)");
-        return;
-    }
+
+    if (!apiKey) return alert("Please enter your Alpha Vantage API Key.");
+    if (!ticker) return alert("Please enter a stock ticker.");
 
     try {
-        // Disable the button so the user doesn't click it twice and crash the browser
+        // UI Reset & Lock
         predictBtn.disabled = true;
-        outputDisplay.innerHTML = "";
+        progressBar.style.width = '0%';
+        finalPredictionEl.innerText = "Calculating...";
+        chartStatus.innerText = "Fetching Live Data...";
+        chartStatus.className = "badge badge-neutral";
 
-        // --- STEP A: FETCH & CLEAN DATA ---
-        statusDisplay.innerText = `Fetching historical data for ${ticker.toUpperCase()}...`;
-        const rawData = await fetchStockData(ticker);
+        // --- PHASE 1: PARALLEL DATA FETCHING ---
+        statusText.innerText = "Connecting to Market and News APIs...";
+        console.log("[SYSTEM]: Initiating parallel fetch for Market Data & News Sentiment.");
         
-        statusDisplay.innerText = "Normalizing data for the neural network...";
-        const { 
-            prices, 
-            normalizedPrices, 
-            inputs, 
-            labels, 
-            min, 
-            max 
-        } = processData(rawData, TIME_STEPS);
+        // Fetch both at the same time to save waiting time
+        const [marketResponse, sentimentScore] = await Promise.all([
+            fetchMarketData(ticker, apiKey),
+            fetchNewsSentiment(ticker, apiKey)
+        ]);
 
-        // --- STEP B: BUILD & TRAIN THE AI ---
-        statusDisplay.innerText = "Building LSTM Architecture...";
-        const model = createModel(TIME_STEPS);
+        // --- PHASE 2: FEATURE ENGINEERING ---
+        statusText.innerText = "Calculating Technical Indicators (RSI, SMA)...";
+        const processed = processMultiFeatureData(marketResponse.dailyData, sentimentScore, TIME_STEPS);
 
-        // We pass a callback function here so model.js can update the HTML after every epoch
-        const updateUiCallback = (message) => {
-            statusDisplay.innerText = message;
-        };
+        // Update Dashboard Indicator Cards
+        valRSI.innerText = processed.recentRSI;
+        valSMA.innerText = `₹${processed.recentSMA}`;
+        valNews.innerText = processed.sentimentScore;
+        valVol.innerText = Number(processed.recentVolume).toLocaleString('en-IN'); // Format for India
+
+        // Draw Historical Chart
+        drawChart(processed.displayData, ticker);
+
+        // --- PHASE 3: BUILD & TRAIN THE AI ---
+        chartStatus.innerText = "Training Neural Network";
+        chartStatus.className = "badge";
+        chartStatus.style.backgroundColor = "var(--accent-blue)";
         
-        await trainModel(model, inputs, labels, TIME_STEPS, updateUiCallback);
+        const model = createModel(TIME_STEPS, FEATURE_COUNT);
 
-        // --- STEP C: PREDICT THE FUTURE ---
-        statusDisplay.innerText = "Analyzing recent momentum...";
-        const finalPrice = predictTomorrow(model, normalizedPrices, TIME_STEPS, min, max);
+        await trainModel(
+            model, 
+            processed.inputs, 
+            processed.labels, 
+            TIME_STEPS, 
+            FEATURE_COUNT, 
+            (progressPct, loss) => {
+                // Live UI Updates during GPU Training
+                progressBar.style.width = `${progressPct}%`;
+                statusText.innerText = `Training AI... Epochs: ${progressPct}% | Error Loss: ${loss}`;
+            }
+        );
 
-        // --- STEP D: DISPLAY RESULT ---
-        statusDisplay.innerText = "Analysis Complete!";
-        outputDisplay.innerHTML = `
-            <strong>Target Stock:</strong> ${ticker.toUpperCase()} <br>
-            <strong>Last Close Price:</strong> ₹${prices[prices.length - 1].toFixed(2)} <br><br>
-            <span style="font-size: 1.2em; color: #007bff;">
-                <strong>AI Predicted Next Close:</strong> ₹${finalPrice}
-            </span>
-        `;
+        // --- PHASE 4: PREDICT & DISPLAY ---
+        statusText.innerText = "Running final inference sequence...";
+        
+        // Grab the most recent training window to predict the next step
+        const lastWindow = processed.inputs[processed.inputs.length - 1];
+        const finalPrice = predictTomorrow(model, lastWindow, TIME_STEPS, FEATURE_COUNT, processed.minPrice, processed.maxPrice);
+
+        // Update UI
+        finalPredictionEl.innerText = `₹${finalPrice}`;
+        statusText.innerText = "Analysis Complete. Model ready for next ticker.";
+        chartStatus.innerText = "Prediction Rendered";
+        chartStatus.style.backgroundColor = "var(--accent-green)";
+
+        // Add the prediction to the Chart
+        addPredictionToChart(processed.displayData, finalPrice);
+
+        // Enable action buttons (Dummy functionality for future)
+        document.querySelector('.btn-buy').disabled = false;
+        document.querySelector('.btn-sell').disabled = false;
+        document.querySelector('.btn-outline').disabled = false;
 
     } catch (error) {
-        // If anything fails (API limits, bad ticker, etc.), show it on the screen
-        statusDisplay.innerText = "Error Occurred";
-        outputDisplay.innerHTML = `<span style="color: red;">${error.message}</span>`;
-        console.error("AI Predictor Error:", error);
+        statusText.innerText = "Execution Halted due to Error.";
+        chartStatus.innerText = "Error";
+        chartStatus.style.backgroundColor = "var(--accent-red)";
+        console.error("Pipeline Failure:", error.message);
     } finally {
-        // Always re-enable the button when finished or if it crashes
         predictBtn.disabled = false;
     }
 });
+
+// ==========================================
+// 4. CHART.JS INTEGRATION
+// ==========================================
+function drawChart(displayData, ticker) {
+    const ctx = document.getElementById('priceChart').getContext('2d');
+    
+    // Destroy previous chart if user searches a new ticker
+    if (priceChart) priceChart.destroy();
+
+    const dates = displayData.map(d => d.date);
+    const prices = displayData.map(d => d.price);
+
+    priceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [{
+                label: `${ticker.toUpperCase()} Close Price`,
+                data: prices,
+                borderColor: '#3b82f6', // Accent Blue
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: true,
+                tension: 0.1 // Slight curve
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#94a3b8' } }
+            },
+            scales: {
+                x: { ticks: { color: '#94a3b8', maxTicksLimit: 10 }, grid: { color: '#334155' } },
+                y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+            }
+        }
+    });
+}
+
+function addPredictionToChart(displayData, prediction) {
+    // Add a new "Tomorrow" label
+    priceChart.data.labels.push("Tomorrow (AI)");
+    
+    // Create a new dataset just for the prediction point to style it differently
+    const predictionData = Array(displayData.length).fill(null);
+    predictionData.push(prediction);
+
+    priceChart.data.datasets.push({
+        label: 'AI Projection',
+        data: predictionData,
+        borderColor: '#10b981', // Accent Green
+        backgroundColor: '#10b981',
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        borderDash: [5, 5], // Dotted line connecting to the actual price
+        showLine: true
+    });
+
+    // Connect the last real price to the predicted price
+    priceChart.data.datasets[1].data[displayData.length - 1] = displayData[displayData.length - 1].price;
+
+    priceChart.update();
+}
