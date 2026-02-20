@@ -3,79 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Indian Stock Market AI Predictor</title>
+    <title>Alpha-Pulse Pro | AI Trading Terminal</title>
     
     <link rel="stylesheet" href="style.css">
+    
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-
-    <style>
-        .console-container {
-            margin-top: 20px;
-            background-color: #1e1e1e;
-            color: #00ff00;
-            padding: 15px;
-            border-radius: 8px;
-            font-family: monospace;
-            height: 250px;
-            overflow-y: auto;
-            border: 2px solid #333;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-        }
-        .console-line { margin-bottom: 5px; border-bottom: 1px solid #333; padding-bottom: 5px; word-wrap: break-word;}
-        .console-error { color: #ff5555; }
-        .console-title { font-size: 0.9rem; color: #888; margin-bottom: 5px; text-transform: uppercase; font-weight: bold; }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>NSE/BSE AI Predictor</h1>
-        <p class="subtitle">Powered by an LSTM Neural Network</p>
+    <div class="dashboard-wrapper">
+        <header class="top-bar">
+            <div class="logo">Alpha-Pulse <span>PRO</span></div>
+            <div class="controls">
+                <input type="password" id="api-key" placeholder="Enter Alpha Vantage Key..." class="header-input">
+                <div class="search-box">
+                    <input type="text" id="ticker" value="TMCV.BSE" placeholder="Ticker (e.g., RELIANCE.BSE)">
+                    <button id="predict-btn" class="btn-primary">RUN AI ENGINE</button>
+                </div>
+            </div>
+        </header>
 
-        <div class="input-group">
-            <label for="ticker">Enter Indian Stock Ticker:</label>
-            <input type="text" id="ticker" value="RELIANCE.NSE" placeholder="e.g., TCS.BOM, ^NSEI">
-        </div>
+        <main class="bento-grid">
+            
+            <section class="chart-panel panel">
+                <div class="panel-header">
+                    <h2>Price Action & AI Projection</h2>
+                    <span id="chart-status" class="badge badge-neutral">Waiting for Data</span>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="priceChart"></canvas>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn-action btn-buy" disabled>Execute BUY Signal</button>
+                    <button class="btn-action btn-sell" disabled>Execute SELL Signal</button>
+                    <button class="btn-action btn-outline" disabled>Save Trained Model</button>
+                </div>
+            </section>
 
-        <button id="predict-btn">Run AI Prediction</button>
-        
-        <div class="status-panel">
-            <p>Status: <span id="status">Ready</span></p>
-            <div id="output" class="result">Waiting to start analysis...</div>
-        </div>
+            <aside class="sidebar-panel">
+                
+                <div class="brain-panel panel">
+                    <h2>LSTM Neural Network</h2>
+                    <div class="progress-bar-container">
+                        <div id="ai-progress" class="progress-fill" style="width: 0%;"></div>
+                    </div>
+                    <p id="status" class="status-text">Ready to train on 100 days of data...</p>
+                    <div class="prediction-box">
+                        <span>Target Prediction:</span>
+                        <h3 id="final-prediction">₹0.00</h3>
+                    </div>
+                </div>
 
-        <div class="console-title" style="margin-top: 30px;">Live API & Error Console</div>
-        <div id="custom-console" class="console-container">
-            <div class="console-line" style="color: #aaa;">[SYSTEM]: Console initialized. Waiting for data...</div>
-        </div>
+                <div class="indicators-panel panel">
+                    <h2>Technical Indicators</h2>
+                    <div class="indicator-grid">
+                        <div class="indicator-card">
+                            <span class="ind-label">14-Day RSI</span>
+                            <span class="ind-value" id="val-rsi">--</span>
+                        </div>
+                        <div class="indicator-card">
+                            <span class="ind-label">20-Day SMA</span>
+                            <span class="ind-value" id="val-sma">--</span>
+                        </div>
+                        <div class="indicator-card">
+                            <span class="ind-label">News Sentiment</span>
+                            <span class="ind-value" id="val-news">--</span>
+                        </div>
+                        <div class="indicator-card">
+                            <span class="ind-label">Recent Volume</span>
+                            <span class="ind-value" id="val-vol">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="console-panel panel">
+                    <h2>System Console</h2>
+                    <div id="custom-console" class="console-box">
+                        <div class="console-line text-muted">[SYSTEM] Terminal Ready. Awaiting execution command.</div>
+                    </div>
+                </div>
+
+            </aside>
+        </main>
     </div>
 
     <script>
         const consoleDiv = document.getElementById('custom-console');
+        function formatOutput(args) { return args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg).join(' '); }
         
-        // Helper function to convert objects (like JSON from APIs) into readable text
-        function formatOutput(args) {
-            return args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg).join(' ');
-        }
-
-        // 1. Hijack standard console.log
         const originalLog = console.log;
         console.log = function(...args) {
             originalLog.apply(console, args);
-            consoleDiv.innerHTML += `<div class="console-line">[LOG]: ${formatOutput(args)}</div>`;
-            consoleDiv.scrollTop = consoleDiv.scrollHeight; // Auto-scroll to bottom
-        };
-
-        // 2. Hijack standard console.error
-        const originalError = console.error;
-        console.error = function(...args) {
-            originalError.apply(console, args);
-            consoleDiv.innerHTML += `<div class="console-line console-error">[ERROR]: ${formatOutput(args)}</div>`;
+            consoleDiv.innerHTML += `<div class="console-line text-success">[LOG]: ${formatOutput(args)}</div>`;
             consoleDiv.scrollTop = consoleDiv.scrollHeight;
         };
 
-        // 3. Catch critical page crashes
+        const originalError = console.error;
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            consoleDiv.innerHTML += `<div class="console-line text-danger">[ERROR]: ${formatOutput(args)}</div>`;
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        };
+
         window.onerror = function(msg, url, line) {
-            consoleDiv.innerHTML += `<div class="console-line console-error">[CRASH]: ${msg} (Line: ${line})</div>`;
+            consoleDiv.innerHTML += `<div class="console-line text-danger">[CRASH]: ${msg} (Line: ${line})</div>`;
             consoleDiv.scrollTop = consoleDiv.scrollHeight;
             return false;
         };
